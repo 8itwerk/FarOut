@@ -8,13 +8,24 @@ SystemClass System;
 
 //Constructor
 SystemClass::SystemClass() :
-	desktop(sf::VideoMode::getDesktopMode()),
-	window(desktop, "FarOut")
+	videoMode(sf::VideoMode::getDesktopMode())
 {
-	inFocus = true;
+	windowTitle = "FarOut";
 
-	addData("DesktopX", desktop.width);
-	addData("DesktopY", desktop.height);
+	std::vector<sf::VideoMode> modes = sf::VideoMode::getFullscreenModes();
+
+	for (int i = 0; i < modes.size(); ++i) {
+		if (modes[i].height == videoMode.height && modes[i].width == videoMode.width) {
+			videoMode = modes[i];
+			break;
+		}
+	}
+	if (videoMode.isValid()) 
+		window.create(videoMode, windowTitle, sf::Style::Fullscreen);
+	else window.create(videoMode, windowTitle);
+
+	addData("DesktopX", videoMode.width);
+	addData("DesktopY", videoMode.height);
 
 	view = window.getDefaultView();
 
@@ -22,13 +33,12 @@ SystemClass::SystemClass() :
 	FPSActive = true;
 	FPSFont.loadFromFile("Assets/AreaKilometer50.otf");
 	FPSText.setFont(FPSFont);
-	FPSText.setCharacterSize(desktop.height / 30);
+	FPSText.setCharacterSize(videoMode.height / 30);
 	FPSText.setPosition(10, 0);
 
 	//VSync
 	VSyncEnabled = false;
 	window.setVerticalSyncEnabled(VSyncEnabled);
-	//window.setMouseCursorVisible(false); //debug
 }
 
 
@@ -132,20 +142,9 @@ void SystemClass::runWindow() {
 			if (event.type == sf::Event::Closed)
 				window.close();
 			
-			//Pauses when out of focus
-			if (event.type == sf::Event::LostFocus)
-				inFocus = false;
-			if (event.type == sf::Event::GainedFocus)
-				inFocus = true;
-
 			//Most events should only be checked when in focus
-			if (inFocus) {
+			if (window.hasFocus()) {
 				if (event.type == sf::Event::KeyPressed) {
-
-					//ESC
-					if (event.key.code == sf::Keyboard::Escape)
-						window.close();
-
 					//VSync toggle
 					if (event.key.code == sf::Keyboard::V) {
 						if (VSyncEnabled) VSyncEnabled = false;
@@ -161,7 +160,7 @@ void SystemClass::runWindow() {
 		//time we came through this loop
 		dt = clock.restart();
 
-		if (inFocus) {
+		if (window.hasFocus()) {
 			window.clear();
 
 			update(dt);
@@ -225,10 +224,5 @@ void SystemClass::quit() {
 
 	window.close();
 }
-
-
-
-
-
 
 
